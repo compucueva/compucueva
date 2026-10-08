@@ -10,13 +10,22 @@ import (
 )
 
 type Task struct {
-	ID          int64          `json:"id"`
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	Status      string         `json:"status"`
-	Priority    string         `json:"priority"`
-	Assignee    sql.NullString `json:"assignee"`
-	ItemID      sql.NullInt64  `json:"item_id"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
+	ID          int64         `json:"id"`
+	Title       string        `json:"title"`
+	Description string        `json:"description"`
+	Status      string        `json:"status"`
+	Priority    string        `json:"priority"`
+	Assignee    sql.NullInt64 `json:"assignee"`
+	ItemID      sql.NullInt64 `json:"item_id"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
+}
+
+type User struct {
+	ID int64 `json:"id"`
+}
+
+type UserTask struct {
+	UserID sql.NullInt64 `json:"user_id"`
+	TaskID sql.NullInt64 `json:"task_id"`
 }
