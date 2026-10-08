@@ -16,7 +16,7 @@ INSERT INTO tasks (
 ) VALUES (
   ?, ?, 'TODO'
 )
-RETURNING id, title, description, status, priority, assignee, item_id, created_at, updated_at
+RETURNING id, title, description, status, priority, created_at, updated_at
 `
 
 type CreateTaskParams struct {
@@ -34,8 +34,6 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.Description,
 		&i.Status,
 		&i.Priority,
-		&i.Assignee,
-		&i.ItemID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -43,7 +41,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 }
 
 const getTask = `-- name: GetTask :one
-SELECT id, title, description, status, priority, assignee, item_id, created_at, updated_at FROM tasks
+SELECT id, title, description, status, priority, created_at, updated_at FROM tasks
 WHERE id = ? LIMIT 1
 `
 
@@ -56,8 +54,6 @@ func (q *Queries) GetTask(ctx context.Context, id int64) (Task, error) {
 		&i.Description,
 		&i.Status,
 		&i.Priority,
-		&i.Assignee,
-		&i.ItemID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -65,7 +61,7 @@ func (q *Queries) GetTask(ctx context.Context, id int64) (Task, error) {
 }
 
 const listTasks = `-- name: ListTasks :many
-SELECT id, title, description, status, priority, assignee, item_id, created_at, updated_at FROM tasks
+SELECT id, title, description, status, priority, created_at, updated_at FROM tasks
 ORDER BY created_at DESC
 `
 
@@ -84,8 +80,6 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 			&i.Description,
 			&i.Status,
 			&i.Priority,
-			&i.Assignee,
-			&i.ItemID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

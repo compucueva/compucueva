@@ -9,20 +9,37 @@ import (
 	"time"
 )
 
+type Item struct {
+	ID          int64          `json:"id"`
+	Type        string         `json:"type"`
+	Description sql.NullString `json:"description"`
+	IngressedAt time.Time      `json:"ingressed_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
 type Task struct {
-	ID          int64         `json:"id"`
-	Title       string        `json:"title"`
-	Description string        `json:"description"`
-	Status      string        `json:"status"`
-	Priority    string        `json:"priority"`
-	Assignee    sql.NullInt64 `json:"assignee"`
-	ItemID      sql.NullInt64 `json:"item_id"`
-	CreatedAt   time.Time     `json:"created_at"`
-	UpdatedAt   time.Time     `json:"updated_at"`
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Status      string    `json:"status"`
+	Priority    string    `json:"priority"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type TaskItem struct {
+	TaskID sql.NullInt64 `json:"task_id"`
+	ItemID sql.NullInt64 `json:"item_id"`
 }
 
 type User struct {
-	ID int64 `json:"id"`
+	ID           int64          `json:"id"`
+	Username     string         `json:"username"`
+	PasswordHash string         `json:"password_hash"`
+	Name         string         `json:"name"`
+	Role         sql.NullString `json:"role"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
 }
 
 type UserTask struct {
