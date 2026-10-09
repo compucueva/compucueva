@@ -1,7 +1,7 @@
 -- backend/schema.sql
 CREATE TABLE users(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL,
+  username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   name TEXT NOT NULL, -- FULL NAME e.g. "Lionel Messi"
   role TEXT, -- ?
@@ -23,7 +23,7 @@ CREATE TABLE items(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   type TEXT NOT NULL, -- PC, FUENTE, MOBO, etc
   description TEXT,
-  ingressed_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, -- no me gusta la palabra ingressed, sujeto a cambios jajaj
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, -- no me gusta la palabra ingressed, sujeto a cambios jajaj
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
