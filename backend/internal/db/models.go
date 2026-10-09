@@ -13,7 +13,7 @@ type Item struct {
 	ID          int64          `json:"id"`
 	Type        string         `json:"type"`
 	Description sql.NullString `json:"description"`
-	IngressedAt time.Time      `json:"ingressed_at"`
+	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
