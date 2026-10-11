@@ -31,14 +31,14 @@ CREATE TABLE user_task(
   user_id INTEGER NOT NULL,
   task_id INTEGER NOT NULL,
   PRIMARY KEY(user_id, task_id),
-  FOREIGN KEY(user_id) REFERENCES users(id),
-  FOREIGN KEY(task_id) REFERENCES tasks(id)
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
 CREATE TABLE task_item(
   task_id INTEGER NOT NULL,
   item_id INTEGER NOT NULL,
   PRIMARY KEY(task_id, item_id),
-  FOREIGN KEY(task_id) REFERENCES tasks(id),
-  FOREIGN KEY(item_id) REFERENCES items(id)
+  FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY(item_id) REFERENCES items(id) ON DELETE CASCADE
 );
