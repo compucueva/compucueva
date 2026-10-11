@@ -28,8 +28,8 @@ type Task struct {
 }
 
 type TaskItem struct {
-	TaskID sql.NullInt64 `json:"task_id"`
-	ItemID sql.NullInt64 `json:"item_id"`
+	TaskID int64 `json:"task_id"`
+	ItemID int64 `json:"item_id"`
 }
 
 type User struct {
@@ -43,6 +43,6 @@ type User struct {
 }
 
 type UserTask struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	TaskID sql.NullInt64 `json:"task_id"`
+	UserID int64 `json:"user_id"`
+	TaskID int64 `json:"task_id"`
 }

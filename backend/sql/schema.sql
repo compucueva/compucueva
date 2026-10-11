@@ -23,21 +23,21 @@ CREATE TABLE items(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   type TEXT NOT NULL, -- PC, FUENTE, MOBO, etc
   description TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, -- no me gusta la palabra ingressed, sujeto a cambios jajaj
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE user_task(
-  user_id INTEGER,
-  task_id INTEGER,
+  user_id INTEGER NOT NULL,
+  task_id INTEGER NOT NULL,
   PRIMARY KEY(user_id, task_id),
   FOREIGN KEY(user_id) REFERENCES users(id),
   FOREIGN KEY(task_id) REFERENCES tasks(id)
 );
 
 CREATE TABLE task_item(
-  task_id INTEGER,
-  item_id INTEGER,
+  task_id INTEGER NOT NULL,
+  item_id INTEGER NOT NULL,
   PRIMARY KEY(task_id, item_id),
   FOREIGN KEY(task_id) REFERENCES tasks(id),
   FOREIGN KEY(item_id) REFERENCES items(id)
