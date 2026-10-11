@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createTask = `-- name: CreateTask :one
@@ -40,6 +41,42 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 	return i, err
 }
 
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (
+  username, password_hash, name, role
+) VALUES (
+  ?, ?, ?, ?
+)
+RETURNING id, username, password_hash, name, role, created_at, updated_at
+`
+
+type CreateUserParams struct {
+	Username     string         `json:"username"`
+	PasswordHash string         `json:"password_hash"`
+	Name         string         `json:"name"`
+	Role         sql.NullString `json:"role"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.Username,
+		arg.PasswordHash,
+		arg.Name,
+		arg.Role,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.Name,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getTask = `-- name: GetTask :one
 SELECT id, title, description, status, priority, created_at, updated_at FROM tasks
 WHERE id = ? LIMIT 1
@@ -58,6 +95,155 @@ func (q *Queries) GetTask(ctx context.Context, id int64) (Task, error) {
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE id = ?
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.Name,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE username = ?
+`
+
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByUsername, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.Name,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUsersByRole = `-- name: GetUsersByRole :many
+SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE role = ?
+`
+
+func (q *Queries) GetUsersByRole(ctx context.Context, role sql.NullString) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersByRole, role)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.PasswordHash,
+			&i.Name,
+			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUsersWithTasks = `-- name: GetUsersWithTasks :many
+SELECT id, username, password_hash, name, role, created_at, updated_at FROM users u
+WHERE EXISTS (
+  SELECT 1 FROM user_task ut WHERE ut.user_id = u.id
+)
+`
+
+func (q *Queries) GetUsersWithTasks(ctx context.Context) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersWithTasks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.PasswordHash,
+			&i.Name,
+			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUsersWithoutTasks = `-- name: GetUsersWithoutTasks :many
+SELECT id, username, password_hash, name, role, created_at, updated_at FROM users u
+WHERE NOT EXISTS (
+  SELECT 1 FROM user_task ut WHERE ut.user_id = u.id
+)
+`
+
+func (q *Queries) GetUsersWithoutTasks(ctx context.Context) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersWithoutTasks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.PasswordHash,
+			&i.Name,
+			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listTasks = `-- name: ListTasks :many
