@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const createTask = `-- name: CreateTask :one
@@ -51,10 +50,10 @@ RETURNING id, username, password_hash, name, role, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username     string         `json:"username"`
-	PasswordHash string         `json:"password_hash"`
-	Name         string         `json:"name"`
-	Role         sql.NullString `json:"role"`
+	Username     string  `json:"username"`
+	PasswordHash string  `json:"password_hash"`
+	Name         string  `json:"name"`
+	Role         *string `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -139,7 +138,7 @@ const getUsersByRole = `-- name: GetUsersByRole :many
 SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE role = ?
 `
 
-func (q *Queries) GetUsersByRole(ctx context.Context, role sql.NullString) ([]User, error) {
+func (q *Queries) GetUsersByRole(ctx context.Context, role *string) ([]User, error) {
 	rows, err := q.db.QueryContext(ctx, getUsersByRole, role)
 	if err != nil {
 		return nil, err
