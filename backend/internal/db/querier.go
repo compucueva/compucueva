@@ -9,16 +9,21 @@ import (
 )
 
 type Querier interface {
+	AssignUserToTask(ctx context.Context, arg AssignUserToTaskParams) error
 	// backend/query.sql
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteTask(ctx context.Context, id int64) error
 	GetTask(ctx context.Context, id int64) (Task, error)
+	GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTaskAssigneesRow, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUsersByRole(ctx context.Context, role *string) ([]User, error)
 	GetUsersWithTasks(ctx context.Context) ([]User, error)
 	GetUsersWithoutTasks(ctx context.Context) ([]User, error)
 	ListTasks(ctx context.Context) ([]Task, error)
+	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
+	UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) (Task, error)
 }
 
 var _ Querier = (*Queries)(nil)

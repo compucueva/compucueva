@@ -16,6 +16,31 @@ WHERE id = ? LIMIT 1;
 SELECT * FROM tasks
 ORDER BY created_at DESC;
 
+-- name: UpdateTaskStatus :one
+UPDATE tasks
+SET status = ?, updated_at=CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
+
+-- name: UpdateTask :one
+UPDATE tasks
+SET title=?, description=?, priority=?, updated_at=CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
+
+-- name: DeleteTask :exec
+DELETE FROM tasks
+WHERE id=?;
+
+-- name: AssignUserToTask :exec
+INSERT INTO user_task (user_id, task_id) 
+VALUES ( ?, ? );
+
+-- name: GetTaskAssignees :many
+SELECT u.id, u.username, u.name FROM users u
+JOIN user_task t ON u.id = t.user_id
+WHERE t.task_id = ?;
+
 -- name: CreateUser :one
 INSERT INTO users (
   username, password_hash, name, role
