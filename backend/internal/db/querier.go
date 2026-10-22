@@ -13,7 +13,7 @@ type Querier interface {
 	// backend/query.sql
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	DeleteTask(ctx context.Context, id int64) error
+	DeleteTask(ctx context.Context, id int64) (int64, error)
 	GetTask(ctx context.Context, id int64) (Task, error)
 	GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTaskAssigneesRow, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)

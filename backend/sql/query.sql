@@ -28,7 +28,7 @@ SET title=?, description=?, priority=?, updated_at=CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
--- name: DeleteTask :exec
+-- name: DeleteTask :execrows
 DELETE FROM tasks
 WHERE id=?;
 

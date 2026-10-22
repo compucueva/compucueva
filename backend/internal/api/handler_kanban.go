@@ -89,12 +89,14 @@ func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.db.DeleteTask(r.Context(), id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "tarea no encontrada", http.StatusNotFound)
-			return
-		}
+	rowsAffected, err := s.db.DeleteTask(r.Context(), id)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if rowsAffected == 0 {
+		http.Error(w, "tarea no encontrada", http.StatusNotFound)
 		return
 	}
 
