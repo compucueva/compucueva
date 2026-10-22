@@ -10,10 +10,14 @@ import (
 	"github.com/compucueva/compucueva/internal/db"
 )
 
+var ErrInvalidID    = "ID invalido"
+var ErrInvalidJSON  = "JSON invalido"
+var ErrTaskNotFound = "tarea no encontrada"
+
 func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	var params db.CreateTaskParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		http.Error(w, ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
@@ -31,12 +35,12 @@ func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleUpdateTaskStatus(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.Error(w, "ID invalido", http.StatusBadRequest)
+		http.Error(w, ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	var params db.UpdateTaskStatusParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		http.Error(w, ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 	params.ID = id
@@ -44,7 +48,7 @@ func (s *Server) handleUpdateTaskStatus(w http.ResponseWriter, r *http.Request) 
 	task, err := s.db.UpdateTaskStatus(r.Context(), params)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "tarea no encontrada", http.StatusNotFound)
+			http.Error(w, ErrTaskNotFound, http.StatusNotFound)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -58,12 +62,12 @@ func (s *Server) handleUpdateTaskStatus(w http.ResponseWriter, r *http.Request) 
 func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.Error(w, "ID invalido", http.StatusBadRequest)
+		http.Error(w, ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	var params db.UpdateTaskParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		http.Error(w, ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 	params.ID = id
@@ -71,7 +75,7 @@ func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 	task, err := s.db.UpdateTask(r.Context(), params)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "tarea no encontrada", http.StatusNotFound)
+			http.Error(w, ErrTaskNotFound, http.StatusNotFound)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -85,7 +89,7 @@ func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.Error(w, "ID invalido", http.StatusBadRequest)
+		http.Error(w, ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
@@ -96,7 +100,7 @@ func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rowsAffected == 0 {
-		http.Error(w, "tarea no encontrada", http.StatusNotFound)
+		http.Error(w, ErrTaskNotFound, http.StatusNotFound)
 		return
 	}
 
@@ -117,13 +121,13 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		http.Error(w, "ID invalido", http.StatusBadRequest)
+		http.Error(w, ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	task, err := s.db.GetTask(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "tarea no encontrada", http.StatusNotFound)
+			http.Error(w, ErrTaskNotFound, http.StatusNotFound)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
