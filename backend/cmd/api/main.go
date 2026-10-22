@@ -39,7 +39,8 @@ func run(ctx context.Context) error {
 	}
 
 	// SQLITE connection
-	conn, err := sql.Open("sqlite", dbPath)
+	dataSourceName := dbPath + "?_pragma=foreign_keys(1)"
+	conn, err := sql.Open("sqlite", dataSourceName)
 	if err != nil {
 		return fmt.Errorf("error al abrir SQLite: %w", err)
 	}
