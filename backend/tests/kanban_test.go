@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -25,7 +26,7 @@ type testEnv struct {
 func setupTestEnv(t *testing.T) *testEnv {
 	t.Helper()
 
-	conn, err := sql.Open("sqlite", ":memory:")
+	conn, err := sql.Open("sqlite", ":memory:?_pragma=foreign_keys(1)")
 	if err != nil {
 		t.Fatalf("failed to open in-memory sqlite: %v", err)
 	}
@@ -50,58 +51,79 @@ func setupTestEnv(t *testing.T) *testEnv {
 func TestCreateTask(t *testing.T) {
 	env := setupTestEnv(t)
 
-	payload := `{"title":"Diagnose motherboard","description":"No POST beep"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/tasks", bytes.NewBufferString(payload))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
+	t.Run("valid payload", func(t *testing.T) {
+		payload := `{"title":"Diagnose motherboard","description":"No POST beep"}`
+		req := httptest.NewRequest(http.MethodPost, "/api/tasks", bytes.NewBufferString(payload))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
 
-	env.server.Routes().ServeHTTP(rec, req)
+		env.server.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
-	}
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
+		}
 
-	var task db.Task
-	if err := json.NewDecoder(rec.Body).Decode(&task); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
+		var task db.Task
+		if err := json.NewDecoder(rec.Body).Decode(&task); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
 
-	if task.Title != "Diagnose motherboard" {
-		t.Errorf("expected title %q, got %q", "Diagnose motherboard", task.Title)
-	}
-	if task.Status != "TODO" {
-		t.Errorf("expected default status %q, got %q", "TODO", task.Status)
-	}
+		if task.Title != "Diagnose motherboard" || task.Status != "TODO" || task.Priority != "NORMAL" {
+			t.Errorf("unexpected task defaults: %+v", task)
+		}
+	})
+
+	t.Run("malformed json", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/tasks", bytes.NewBufferString(`{"title":`))
+		rec := httptest.NewRecorder()
+
+		env.server.Routes().ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %d", rec.Code)
+		}
+	})
 }
 
 func TestListTasks(t *testing.T) {
 	env := setupTestEnv(t)
 
-	_, err := env.queries.CreateTask(context.Background(), db.CreateTaskParams{
-		Title:       "Task 1",
-		Description: "Description 1",
+	t.Run("empty list returns json array not null", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/tasks", nil)
+		rec := httptest.NewRecorder()
+
+		env.server.Routes().ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected status 200, got %d", rec.Code)
+		}
+		if strings.TrimSpace(rec.Body.String()) != "[]" {
+			t.Fatalf("expected empty JSON array [], got %s", rec.Body.String())
+		}
 	})
-	if err != nil {
-		t.Fatalf("failed to seed task: %v", err)
-	}
 
-	req := httptest.NewRequest(http.MethodGet, "/api/tasks", nil)
-	rec := httptest.NewRecorder()
+	t.Run("populated list", func(t *testing.T) {
+		_, err := env.queries.CreateTask(context.Background(), db.CreateTaskParams{
+			Title:       "Task 1",
+			Description: "Description 1",
+		})
+		if err != nil {
+			t.Fatalf("failed to seed task: %v", err)
+		}
 
-	env.server.Routes().ServeHTTP(rec, req)
+		req := httptest.NewRequest(http.MethodGet, "/api/tasks", nil)
+		rec := httptest.NewRecorder()
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
-	}
+		env.server.Routes().ServeHTTP(rec, req)
 
-	var tasks []db.Task
-	if err := json.NewDecoder(rec.Body).Decode(&tasks); err != nil {
-		t.Fatalf("failed to decode tasks: %v", err)
-	}
-
-	if len(tasks) != 1 {
-		t.Fatalf("expected 1 task, got %d", len(tasks))
-	}
+		var tasks []db.Task
+		if err := json.NewDecoder(rec.Body).Decode(&tasks); err != nil {
+			t.Fatalf("failed to decode tasks: %v", err)
+		}
+		if len(tasks) != 1 {
+			t.Fatalf("expected 1 task, got %d", len(tasks))
+		}
+	})
 }
 
 func TestGetTaskByID(t *testing.T) {
@@ -134,6 +156,17 @@ func TestGetTaskByID(t *testing.T) {
 
 		if rec.Code != http.StatusNotFound {
 			t.Fatalf("expected status 404, got %d", rec.Code)
+		}
+	})
+
+	t.Run("invalid non-numeric id", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/tasks/abc", nil)
+		rec := httptest.NewRecorder()
+
+		env.server.Routes().ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %d", rec.Code)
 		}
 	})
 }
@@ -171,6 +204,17 @@ func TestUpdateTaskStatus(t *testing.T) {
 		}
 	})
 
+	t.Run("non-existent task returns 404", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPatch, "/api/tasks/99999/status", bytes.NewBufferString(`{"status":"DONE"}`))
+		rec := httptest.NewRecorder()
+
+		env.server.Routes().ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("expected status 404, got %d", rec.Code)
+		}
+	})
+
 	t.Run("invalid status rejected by check constraint", func(t *testing.T) {
 		payload := `{"status":"INVALID_STATUS"}`
 		url := fmt.Sprintf("/api/tasks/%d/status", seeded.ID)
@@ -197,26 +241,53 @@ func TestUpdateTask(t *testing.T) {
 		t.Fatalf("failed to seed task: %v", err)
 	}
 
-	payload := `{"title":"Updated Title","description":"Updated Description","priority":"HIGH"}`
-	url := fmt.Sprintf("/api/tasks/%d", seeded.ID)
-	req := httptest.NewRequest(http.MethodPut, url, bytes.NewBufferString(payload))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
+	t.Run("valid update", func(t *testing.T) {
+		payload := `{"title":"Updated Title","description":"Updated Description","priority":"HIGH"}`
+		url := fmt.Sprintf("/api/tasks/%d", seeded.ID)
+		req := httptest.NewRequest(http.MethodPut, url, bytes.NewBufferString(payload))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
 
-	env.server.Routes().ServeHTTP(rec, req)
+		env.server.Routes().ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
-	}
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected status 200, got %d", rec.Code)
+		}
 
-	var updated db.Task
-	if err := json.NewDecoder(rec.Body).Decode(&updated); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
+		var updated db.Task
+		if err := json.NewDecoder(rec.Body).Decode(&updated); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
 
-	if updated.Title != "Updated Title" || updated.Priority != "HIGH" {
-		t.Errorf("task fields did not update properly: %+v", updated)
-	}
+		if updated.Title != "Updated Title" || updated.Priority != "HIGH" {
+			t.Errorf("task fields did not update properly: %+v", updated)
+		}
+	})
+
+	t.Run("invalid priority rejected by check constraint", func(t *testing.T) {
+		payload := `{"title":"T","description":"D","priority":"URGENT"}`
+		url := fmt.Sprintf("/api/tasks/%d", seeded.ID)
+		req := httptest.NewRequest(http.MethodPut, url, bytes.NewBufferString(payload))
+		rec := httptest.NewRecorder()
+
+		env.server.Routes().ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("expected status 500 on invalid priority, got %d", rec.Code)
+		}
+	})
+
+	t.Run("non-existent task returns 404", func(t *testing.T) {
+		payload := `{"title":"T","description":"D","priority":"LOW"}`
+		req := httptest.NewRequest(http.MethodPut, "/api/tasks/99999", bytes.NewBufferString(payload))
+		rec := httptest.NewRecorder()
+
+		env.server.Routes().ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("expected status 404, got %d", rec.Code)
+		}
+	})
 }
 
 func TestDeleteTask(t *testing.T) {
@@ -231,21 +302,22 @@ func TestDeleteTask(t *testing.T) {
 	}
 
 	url := fmt.Sprintf("/api/tasks/%d", seeded.ID)
+
+	// First delete succeeds
 	req := httptest.NewRequest(http.MethodDelete, url, nil)
 	rec := httptest.NewRecorder()
-
 	env.server.Routes().ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("expected status 204, got %d", rec.Code)
 	}
 
-	// Verify task is gone
-	getReq := httptest.NewRequest(http.MethodGet, url, nil)
-	getRec := httptest.NewRecorder()
-	env.server.Routes().ServeHTTP(getRec, getReq)
+	// Second delete on same ID must return 404
+	req2 := httptest.NewRequest(http.MethodDelete, url, nil)
+	rec2 := httptest.NewRecorder()
+	env.server.Routes().ServeHTTP(rec2, req2)
 
-	if getRec.Code != http.StatusNotFound {
-		t.Fatalf("expected status 404 after deletion, got %d", getRec.Code)
+	if rec2.Code != http.StatusNotFound {
+		t.Fatalf("expected status 404 on second delete, got %d", rec2.Code)
 	}
 }

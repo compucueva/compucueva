@@ -31,6 +31,15 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("PUT /api/tasks/{id}", s.handleUpdateTask)
 	mux.HandleFunc("PATCH /api/tasks/{id}/status", s.handleUpdateTaskStatus)
 	mux.HandleFunc("DELETE /api/tasks/{id}", s.handleDeleteTask)
+	mux.HandleFunc("POST /api/tasks/assign", s.handleAssignUserToTask)
+	mux.HandleFunc("GET /api/tasks/{id}/assignees", s.handleGetTaskAssignees)
+
+	mux.HandleFunc("POST /api/users", s.handleCreateUser)
+	mux.HandleFunc("GET /api/users/with-tasks", s.handleGetUsersWithTasks)
+	mux.HandleFunc("GET /api/users/without-tasks", s.handleGetUsersWithoutTasks)
+	mux.HandleFunc("GET /api/users/username/{username}", s.handleGetUserByUsername)
+	mux.HandleFunc("GET /api/users/role/{role}", s.handleGetUsersByRole)
+	mux.HandleFunc("GET /api/users/{id}", s.handleGetUserByID)
 
 	return mux
 }

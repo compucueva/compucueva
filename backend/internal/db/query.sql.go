@@ -57,32 +57,25 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-  username, password_hash, name, role
+  username, name, role
 ) VALUES (
-  ?, ?, ?, ?
+  ?, ?, ?
 )
-RETURNING id, username, password_hash, name, role, created_at, updated_at
+RETURNING id, username, name, role, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username     string  `json:"username"`
-	PasswordHash string  `json:"password_hash"`
-	Name         string  `json:"name"`
-	Role         *string `json:"role"`
+	Username string  `json:"username"`
+	Name     string  `json:"name"`
+	Role     *string `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
-		arg.Username,
-		arg.PasswordHash,
-		arg.Name,
-		arg.Role,
-	)
+	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Name, arg.Role)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
-		&i.PasswordHash,
 		&i.Name,
 		&i.Role,
 		&i.CreatedAt,
@@ -160,7 +153,7 @@ func (q *Queries) GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTask
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE id = ?
+SELECT id, username, name, role, created_at, updated_at FROM users WHERE id = ?
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -169,7 +162,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
-		&i.PasswordHash,
 		&i.Name,
 		&i.Role,
 		&i.CreatedAt,
@@ -179,7 +171,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE username = ?
+SELECT id, username, name, role, created_at, updated_at FROM users WHERE username = ?
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -188,7 +180,6 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
-		&i.PasswordHash,
 		&i.Name,
 		&i.Role,
 		&i.CreatedAt,
@@ -198,7 +189,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const getUsersByRole = `-- name: GetUsersByRole :many
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE role = ?
+SELECT id, username, name, role, created_at, updated_at FROM users WHERE role = ?
 `
 
 func (q *Queries) GetUsersByRole(ctx context.Context, role *string) ([]User, error) {
@@ -213,7 +204,6 @@ func (q *Queries) GetUsersByRole(ctx context.Context, role *string) ([]User, err
 		if err := rows.Scan(
 			&i.ID,
 			&i.Username,
-			&i.PasswordHash,
 			&i.Name,
 			&i.Role,
 			&i.CreatedAt,
@@ -233,7 +223,7 @@ func (q *Queries) GetUsersByRole(ctx context.Context, role *string) ([]User, err
 }
 
 const getUsersWithTasks = `-- name: GetUsersWithTasks :many
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users u
+SELECT id, username, name, role, created_at, updated_at FROM users u
 WHERE EXISTS (
   SELECT 1 FROM user_task ut WHERE ut.user_id = u.id
 )
@@ -251,7 +241,6 @@ func (q *Queries) GetUsersWithTasks(ctx context.Context) ([]User, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Username,
-			&i.PasswordHash,
 			&i.Name,
 			&i.Role,
 			&i.CreatedAt,
@@ -271,7 +260,7 @@ func (q *Queries) GetUsersWithTasks(ctx context.Context) ([]User, error) {
 }
 
 const getUsersWithoutTasks = `-- name: GetUsersWithoutTasks :many
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users u
+SELECT id, username, name, role, created_at, updated_at FROM users u
 WHERE NOT EXISTS (
   SELECT 1 FROM user_task ut WHERE ut.user_id = u.id
 )
@@ -289,7 +278,6 @@ func (q *Queries) GetUsersWithoutTasks(ctx context.Context) ([]User, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Username,
-			&i.PasswordHash,
 			&i.Name,
 			&i.Role,
 			&i.CreatedAt,

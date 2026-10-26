@@ -32,13 +32,12 @@ type TaskItem struct {
 }
 
 type User struct {
-	ID           int64     `json:"id"`
-	Username     string    `json:"username"`
-	PasswordHash string    `json:"password_hash"`
-	Name         string    `json:"name"`
-	Role         *string   `json:"role"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID        int64     `json:"id"`
+	Username  string    `json:"username"`
+	Name      string    `json:"name"`
+	Role      *string   `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type UserTask struct {
