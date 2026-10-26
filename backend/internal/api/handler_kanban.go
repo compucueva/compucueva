@@ -149,3 +149,24 @@ func (s *Server) handleAssignUserToTask(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *Server) handleUnassignUserFromTask(w http.ResponseWriter, r *http.Request) {
+	var params db.UnassignUserFromTaskParams
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		http.Error(w, ErrInvalidJSON, http.StatusBadRequest)
+		return
+	}
+
+	rowsAffected, err := s.db.UnassignUserFromTask(r.Context(), params)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if rowsAffected == 0 {
+		http.Error(w, ErrNotFound, http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

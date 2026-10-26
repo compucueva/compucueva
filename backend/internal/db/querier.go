@@ -31,6 +31,7 @@ type Querier interface {
 	ListItems(ctx context.Context) ([]Item, error)
 	ListTasks(ctx context.Context) ([]Task, error)
 	UnassignItemFromTask(ctx context.Context, arg UnassignItemFromTaskParams) (int64, error)
+	UnassignUserFromTask(ctx context.Context, arg UnassignUserFromTaskParams) (int64, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 	UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) (Task, error)
 }

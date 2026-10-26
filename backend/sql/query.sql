@@ -47,6 +47,11 @@ WHERE id=?;
 INSERT INTO user_task (user_id, task_id) 
 VALUES ( ?, ? );
 
+-- name: UnassignUserFromTask :execrows
+DELETE FROM user_task
+WHERE user_id=? AND task_id=?;
+
+
 -- name: GetTaskAssignees :many
 SELECT u.id, u.username, u.name FROM users u
 JOIN user_task t ON u.id = t.user_id

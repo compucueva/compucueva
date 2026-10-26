@@ -74,7 +74,7 @@ func (s *Server) handleAssignItemToTask(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) handleUnassignItemToTask(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleUnassignItemFromTask(w http.ResponseWriter, r *http.Request) {
 	var params db.UnassignItemFromTaskParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		http.Error(w, ErrInvalidJSON, http.StatusBadRequest)

@@ -483,6 +483,24 @@ func (q *Queries) UnassignItemFromTask(ctx context.Context, arg UnassignItemFrom
 	return result.RowsAffected()
 }
 
+const unassignUserFromTask = `-- name: UnassignUserFromTask :execrows
+DELETE FROM user_task
+WHERE user_id=? AND task_id=?
+`
+
+type UnassignUserFromTaskParams struct {
+	UserID int64 `json:"user_id"`
+	TaskID int64 `json:"task_id"`
+}
+
+func (q *Queries) UnassignUserFromTask(ctx context.Context, arg UnassignUserFromTaskParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, unassignUserFromTask, arg.UserID, arg.TaskID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
 SET title=?, description=?, priority=?, updated_at=CURRENT_TIMESTAMP
