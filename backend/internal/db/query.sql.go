@@ -218,13 +218,14 @@ func (q *Queries) GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTask
 }
 
 const getTaskItems = `-- name: GetTaskItems :many
-SELECT i.id, i.description FROM items i
+SELECT i.id, i.type, i.description FROM items i
 JOIN task_item t ON i.id = t.task_id
 WHERE t.task_id = ?
 `
 
 type GetTaskItemsRow struct {
 	ID          int64   `json:"id"`
+	Type        string  `json:"type"`
 	Description *string `json:"description"`
 }
 
@@ -237,7 +238,7 @@ func (q *Queries) GetTaskItems(ctx context.Context, taskID int64) ([]GetTaskItem
 	items := []GetTaskItemsRow{}
 	for rows.Next() {
 		var i GetTaskItemsRow
-		if err := rows.Scan(&i.ID, &i.Description); err != nil {
+		if err := rows.Scan(&i.ID, &i.Type, &i.Description); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

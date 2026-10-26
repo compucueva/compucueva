@@ -116,6 +116,6 @@ DELETE FROM task_item
 WHERE task_id=? AND item_id=?;
 
 -- name: GetTaskItems :many
-SELECT i.id, i.description FROM items i
+SELECT i.id, i.type, i.description FROM items i
 JOIN task_item t ON i.id = t.task_id
 WHERE t.task_id = ?;
