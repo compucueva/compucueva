@@ -43,9 +43,9 @@ WHERE t.task_id = ?;
 
 -- name: CreateUser :one
 INSERT INTO users (
-  username, password_hash, name, role
+  username, name, role
 ) VALUES (
-  ?, ?, ?, ?
+  ?, ?, ?
 )
 RETURNING *;
 
