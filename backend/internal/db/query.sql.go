@@ -219,7 +219,7 @@ func (q *Queries) GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTask
 
 const getTaskItems = `-- name: GetTaskItems :many
 SELECT i.id, i.type, i.description FROM items i
-JOIN task_item t ON i.id = t.task_id
+JOIN task_item t ON i.id = t.item_id
 WHERE t.task_id = ?
 `
 

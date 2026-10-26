@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/compucueva/compucueva/internal/db"
@@ -112,4 +113,28 @@ func (s *Server) handleGetTaskAssignees(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+func (s *Server) handleGetMe(w http.ResponseWriter, r *http.Request) {
+	email := r.Header.Get("Cf-Access-Authenticated-User-Email")
+	if email == "" {
+		email = os.Getenv("DEV_USER")
+	}
+	if email == "" {
+		http.Error(w, "no autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := s.db.GetUserByUsername(r.Context(), email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, ErrNotFound, http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
 }
