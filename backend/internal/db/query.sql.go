@@ -142,7 +142,7 @@ func (q *Queries) GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTask
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetTaskAssigneesRow
+	items := []GetTaskAssigneesRow{}
 	for rows.Next() {
 		var i GetTaskAssigneesRow
 		if err := rows.Scan(&i.ID, &i.Username, &i.Name); err != nil {
@@ -207,7 +207,7 @@ func (q *Queries) GetUsersByRole(ctx context.Context, role *string) ([]User, err
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	items := []User{}
 	for rows.Next() {
 		var i User
 		if err := rows.Scan(
@@ -245,7 +245,7 @@ func (q *Queries) GetUsersWithTasks(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	items := []User{}
 	for rows.Next() {
 		var i User
 		if err := rows.Scan(
@@ -283,7 +283,7 @@ func (q *Queries) GetUsersWithoutTasks(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	items := []User{}
 	for rows.Next() {
 		var i User
 		if err := rows.Scan(
@@ -319,7 +319,7 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	items := []Task{}
 	for rows.Next() {
 		var i Task
 		if err := rows.Scan(

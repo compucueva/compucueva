@@ -99,7 +99,7 @@ func (s *Server) handleGetUsersWithoutTasks(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *Server) handleGetTaskAssignees(w http.ResponseWriter, r *http.Request) {
-	task, err := strconv.ParseInt("id", 10, 64)
+	task, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.Error(w, ErrInvalidID, http.StatusBadRequest)
 		return
