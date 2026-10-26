@@ -52,6 +52,14 @@ func run(ctx context.Context) error {
 	if err := conn.PingContext(ctx); err != nil {
 		return fmt.Errorf("error al verificar SQLite: %w", err)
 	}
+
+	schema, err := os.ReadFile("sql/schema.sql")
+	if err != nil {
+		return fmt.Errorf("error al leer schema.sql: %w", err)
+	}
+	if _, err := conn.ExecContext(ctx, string(schema)); err != nil {
+		return fmt.Errorf("error al inicializar tablas: %w", err)
+	}
 	log.Printf("[db] Conectado exitosamente a %s", dbPath)
 
 	queries := db.New(conn)
