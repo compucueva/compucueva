@@ -54,5 +54,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("DELETE /api/items/{id}", s.handleDeleteItem)
 	mux.HandleFunc("POST /api/items/assign", s.handleAssignItemToTask)
 
+	// Static frontend
+	mux.Handle("GET /", http.FileServer(http.Dir("../frontend")))
+
 	return mux
 }

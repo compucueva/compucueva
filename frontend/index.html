@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>compucueva // taller</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">[compucueva]</div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="kanban">kanban</button>
+      <button class="tab" data-tab="items">inventario</button>
+      <button class="tab" data-tab="users">equipo</button>
+    </nav>
+    <div id="me-badge" class="me-badge">auth: ...</div>
+  </header>
+
+  <main>
+    <!-- KANBAN -->
+    <section id="view-kanban" class="view active">
+      <form id="form-new-task" class="inline-form">
+        <input type="text" name="title" placeholder="nueva tarea (ej. revisar fuente ATX)" required>
+        <input type="text" name="description" placeholder="descripción / falla" required>
+        <button type="submit">+ crear tarea</button>
+      </form>
+
+      <div class="board">
+        <div class="column" data-status="TODO">
+          <h3>TODO</h3>
+          <div class="task-list" id="col-TODO"></div>
+        </div>
+        <div class="column" data-status="DOING">
+          <h3>DOING</h3>
+          <div class="task-list" id="col-DOING"></div>
+        </div>
+        <div class="column" data-status="REVIEW">
+          <h3>REVIEW</h3>
+          <div class="task-list" id="col-REVIEW"></div>
+        </div>
+        <div class="column" data-status="DONE">
+          <h3>DONE</h3>
+          <div class="task-list" id="col-DONE"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INVENTARIO -->
+    <section id="view-items" class="view">
+      <form id="form-new-item" class="inline-form">
+        <input type="text" name="type" placeholder="tipo (PC, FUENTE, MOBO, RAM...)" required>
+        <input type="text" name="description" placeholder="detalle / estado / serie">
+        <button type="submit">+ agregar ítem</button>
+      </form>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Descripción</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="items-tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- EQUIPO / USUARIOS -->
+    <section id="view-users" class="view">
+      <div class="toolbar">
+        <form id="form-new-user" class="inline-form">
+          <input type="text" name="username" placeholder="email / username" required>
+          <input type="text" name="name" placeholder="nombre completo" required>
+          <input type="text" name="role" placeholder="rol (ej. TECH, ADMIN)">
+          <button type="submit">+ registrar miembro</button>
+        </form>
+        <div class="filter-group">
+          <button type="button" data-user-filter="all" class="active">todos</button>
+          <button type="button" data-user-filter="with-tasks">con tareas</button>
+          <button type="button" data-user-filter="without-tasks">libres</button>
+        </div>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Nombre</th>
+            <th>Rol</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- MODAL DETALLE / EDICIÓN DE TAREA -->
+  <dialog id="task-dialog">
+    <form id="form-edit-task">
+      <div class="dialog-header">
+        <strong id="dialog-task-id">#0</strong>
+        <button type="button" id="btn-close-dialog">x</button>
+      </div>
+      <input type="hidden" name="id">
+      <label>Título
+        <input type="text" name="title" required>
+      </label>
+      <label>Descripción
+        <textarea name="description" rows="3" required></textarea>
+      </label>
+      <label>Prioridad
+        <select name="priority">
+          <option value="LOW">LOW</option>
+          <option value="NORMAL">NORMAL</option>
+          <option value="HIGH">HIGH</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button type="submit">guardar cambios</button>
+        <button type="button" id="btn-delete-task" class="danger">eliminar tarea</button>
+      </div>
+    </form>
+
+    <hr>
+
+    <div class="relations-grid">
+      <div>
+        <h4>Responsables</h4>
+        <ul id="task-assignees-list" class="tag-list"></ul>
+        <form id="form-assign-user" class="mini-form">
+          <select name="user_id" id="select-assign-user" required></select>
+          <button type="submit">+ asignar</button>
+        </form>
+      </div>
+      <div>
+        <h4>Ítems vinculados</h4>
+        <ul id="task-items-list" class="tag-list"></ul>
+        <form id="form-assign-item" class="mini-form">
+          <select name="item_id" id="select-assign-item" required></select>
+          <button type="submit">+ vincular</button>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
