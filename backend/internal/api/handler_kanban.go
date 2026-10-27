@@ -151,13 +151,21 @@ func (s *Server) handleAssignUserToTask(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) handleUnassignUserFromTask(w http.ResponseWriter, r *http.Request) {
-	var params db.UnassignUserFromTaskParams
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, ErrInvalidJSON, http.StatusBadRequest)
+	taskID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
+	if err != nil {
+		http.Error(w, ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
-	rowsAffected, err := s.db.UnassignUserFromTask(r.Context(), params)
+	rowsAffected, err := s.db.UnassignUserFromTask(r.Context(), db.UnassignUserFromTaskParams{
+		UserID: userID,
+		TaskID: taskID,
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
