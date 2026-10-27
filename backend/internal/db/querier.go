@@ -9,19 +9,29 @@ import (
 )
 
 type Querier interface {
+	AssignItemToTask(ctx context.Context, arg AssignItemToTaskParams) error
+	// USERS
 	AssignUserToTask(ctx context.Context, arg AssignUserToTaskParams) error
+	// ITEMS
+	CreateItem(ctx context.Context, arg CreateItemParams) (Item, error)
 	// backend/query.sql
+	// TASKS
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteItem(ctx context.Context, id int64) (int64, error)
 	DeleteTask(ctx context.Context, id int64) (int64, error)
 	GetTask(ctx context.Context, id int64) (Task, error)
 	GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTaskAssigneesRow, error)
+	GetTaskItems(ctx context.Context, taskID int64) ([]GetTaskItemsRow, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUsersByRole(ctx context.Context, role *string) ([]User, error)
 	GetUsersWithTasks(ctx context.Context) ([]User, error)
 	GetUsersWithoutTasks(ctx context.Context) ([]User, error)
+	ListItems(ctx context.Context) ([]Item, error)
 	ListTasks(ctx context.Context) ([]Task, error)
+	UnassignItemFromTask(ctx context.Context, arg UnassignItemFromTaskParams) (int64, error)
+	UnassignUserFromTask(ctx context.Context, arg UnassignUserFromTaskParams) (int64, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 	UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) (Task, error)
 }

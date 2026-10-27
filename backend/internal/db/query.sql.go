@@ -9,7 +9,23 @@ import (
 	"context"
 )
 
+const assignItemToTask = `-- name: AssignItemToTask :exec
+INSERT INTO task_item (task_id, item_id) 
+VALUES ( ?, ? )
+`
+
+type AssignItemToTaskParams struct {
+	TaskID int64 `json:"task_id"`
+	ItemID int64 `json:"item_id"`
+}
+
+func (q *Queries) AssignItemToTask(ctx context.Context, arg AssignItemToTaskParams) error {
+	_, err := q.db.ExecContext(ctx, assignItemToTask, arg.TaskID, arg.ItemID)
+	return err
+}
+
 const assignUserToTask = `-- name: AssignUserToTask :exec
+
 INSERT INTO user_task (user_id, task_id) 
 VALUES ( ?, ? )
 `
@@ -19,12 +35,47 @@ type AssignUserToTaskParams struct {
 	TaskID int64 `json:"task_id"`
 }
 
+// USERS
 func (q *Queries) AssignUserToTask(ctx context.Context, arg AssignUserToTaskParams) error {
 	_, err := q.db.ExecContext(ctx, assignUserToTask, arg.UserID, arg.TaskID)
 	return err
 }
 
+const createItem = `-- name: CreateItem :one
+
+INSERT INTO items (
+  type, description
+) VALUES (
+  ?, ?
+  )
+RETURNING id, type, description, created_at, updated_at
+`
+
+type CreateItemParams struct {
+	Type        string  `json:"type"`
+	Description *string `json:"description"`
+}
+
+// ITEMS
+func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, error) {
+	row := q.db.QueryRowContext(ctx, createItem, arg.Type, arg.Description)
+	var i Item
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createTask = `-- name: CreateTask :one
+
+
+
+
+
 
 INSERT INTO tasks (
   title, description, status
@@ -40,6 +91,7 @@ type CreateTaskParams struct {
 }
 
 // backend/query.sql
+// TASKS
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, createTask, arg.Title, arg.Description)
 	var i Task
@@ -82,6 +134,19 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteItem = `-- name: DeleteItem :execrows
+DELETE FROM items
+WHERE id=?
+`
+
+func (q *Queries) DeleteItem(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteItem, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const deleteTask = `-- name: DeleteTask :execrows
@@ -139,6 +204,41 @@ func (q *Queries) GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTask
 	for rows.Next() {
 		var i GetTaskAssigneesRow
 		if err := rows.Scan(&i.ID, &i.Username, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTaskItems = `-- name: GetTaskItems :many
+SELECT i.id, i.type, i.description FROM items i
+JOIN task_item t ON i.id = t.item_id
+WHERE t.task_id = ?
+`
+
+type GetTaskItemsRow struct {
+	ID          int64   `json:"id"`
+	Type        string  `json:"type"`
+	Description *string `json:"description"`
+}
+
+func (q *Queries) GetTaskItems(ctx context.Context, taskID int64) ([]GetTaskItemsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTaskItems, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetTaskItemsRow{}
+	for rows.Next() {
+		var i GetTaskItemsRow
+		if err := rows.Scan(&i.ID, &i.Type, &i.Description); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -296,6 +396,40 @@ func (q *Queries) GetUsersWithoutTasks(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const listItems = `-- name: ListItems :many
+SELECT id, type, description, created_at, updated_at FROM items
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListItems(ctx context.Context) ([]Item, error) {
+	rows, err := q.db.QueryContext(ctx, listItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Item{}
+	for rows.Next() {
+		var i Item
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTasks = `-- name: ListTasks :many
 SELECT id, title, description, status, priority, created_at, updated_at FROM tasks
 ORDER BY created_at DESC
@@ -330,6 +464,42 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const unassignItemFromTask = `-- name: UnassignItemFromTask :execrows
+DELETE FROM task_item
+WHERE task_id=? AND item_id=?
+`
+
+type UnassignItemFromTaskParams struct {
+	TaskID int64 `json:"task_id"`
+	ItemID int64 `json:"item_id"`
+}
+
+func (q *Queries) UnassignItemFromTask(ctx context.Context, arg UnassignItemFromTaskParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, unassignItemFromTask, arg.TaskID, arg.ItemID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const unassignUserFromTask = `-- name: UnassignUserFromTask :execrows
+DELETE FROM user_task
+WHERE user_id=? AND task_id=?
+`
+
+type UnassignUserFromTaskParams struct {
+	UserID int64 `json:"user_id"`
+	TaskID int64 `json:"task_id"`
+}
+
+func (q *Queries) UnassignUserFromTask(ctx context.Context, arg UnassignUserFromTaskParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, unassignUserFromTask, arg.UserID, arg.TaskID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const updateTask = `-- name: UpdateTask :one

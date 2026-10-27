@@ -25,6 +25,7 @@ func NewServer(db db.Querier) *Server {
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 
+	// Tasks
 	mux.HandleFunc("GET /api/tasks", s.handleListTasks)
 	mux.HandleFunc("POST /api/tasks", s.handleCreateTask)
 	mux.HandleFunc("GET /api/tasks/{id}", s.handleGetTaskByID)
@@ -32,14 +33,25 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("PATCH /api/tasks/{id}/status", s.handleUpdateTaskStatus)
 	mux.HandleFunc("DELETE /api/tasks/{id}", s.handleDeleteTask)
 	mux.HandleFunc("POST /api/tasks/assign", s.handleAssignUserToTask)
+	mux.HandleFunc("DELETE /api/tasks/unassign", s.handleUnassignUserFromTask)
 	mux.HandleFunc("GET /api/tasks/{id}/assignees", s.handleGetTaskAssignees)
+	mux.HandleFunc("GET /api/tasks/{id}/items", s.handleGetTaskItems)
 
+	// Users & Auth
+	mux.HandleFunc("GET /api/me", s.handleGetMe)
 	mux.HandleFunc("POST /api/users", s.handleCreateUser)
 	mux.HandleFunc("GET /api/users/with-tasks", s.handleGetUsersWithTasks)
 	mux.HandleFunc("GET /api/users/without-tasks", s.handleGetUsersWithoutTasks)
 	mux.HandleFunc("GET /api/users/username/{username}", s.handleGetUserByUsername)
 	mux.HandleFunc("GET /api/users/role/{role}", s.handleGetUsersByRole)
 	mux.HandleFunc("GET /api/users/{id}", s.handleGetUserByID)
+
+	// Items
+	mux.HandleFunc("GET /api/items", s.handleListItems)
+	mux.HandleFunc("POST /api/items", s.handleCreateItem)
+	mux.HandleFunc("DELETE /api/items/{id}", s.handleDeleteItem)
+	mux.HandleFunc("POST /api/items/assign", s.handleAssignItemToTask)
+	mux.HandleFunc("DELETE /api/items/unassign", s.handleUnassignItemFromTask)
 
 	return mux
 }

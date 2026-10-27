@@ -1,5 +1,11 @@
 -- backend/query.sql
 
+
+
+
+
+-- TASKS
+
 -- name: CreateTask :one
 INSERT INTO tasks (
   title, description, status
@@ -32,9 +38,19 @@ RETURNING *;
 DELETE FROM tasks
 WHERE id=?;
 
+
+
+
+-- USERS
+
 -- name: AssignUserToTask :exec
 INSERT INTO user_task (user_id, task_id) 
 VALUES ( ?, ? );
+
+-- name: UnassignUserFromTask :execrows
+DELETE FROM user_task
+WHERE user_id=? AND task_id=?;
+
 
 -- name: GetTaskAssignees :many
 SELECT u.id, u.username, u.name FROM users u
@@ -69,3 +85,37 @@ SELECT * FROM users u
 WHERE NOT EXISTS (
   SELECT 1 FROM user_task ut WHERE ut.user_id = u.id
 );
+
+
+
+
+-- ITEMS
+
+-- name: CreateItem :one
+INSERT INTO items (
+  type, description
+) VALUES (
+  ?, ?
+  )
+RETURNING *;
+
+-- name: ListItems :many
+SELECT * FROM items
+ORDER BY created_at DESC;
+
+-- name: DeleteItem :execrows
+DELETE FROM items
+WHERE id=?;
+
+-- name: AssignItemToTask :exec
+INSERT INTO task_item (task_id, item_id) 
+VALUES ( ?, ? );
+
+-- name: UnassignItemFromTask :execrows
+DELETE FROM task_item
+WHERE task_id=? AND item_id=?;
+
+-- name: GetTaskItems :many
+SELECT i.id, i.type, i.description FROM items i
+JOIN task_item t ON i.id = t.item_id
+WHERE t.task_id = ?;
