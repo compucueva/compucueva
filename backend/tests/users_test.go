@@ -50,6 +50,32 @@ func TestCreateAndGetUser(t *testing.T) {
 		if getUserRec.Code != http.StatusOK {
 			t.Fatalf("expected status 200 on get by username, got %d", getUserRec.Code)
 		}
+
+		// Get /api/me via Cloudflare header
+		meReq := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+		meReq.Header.Set("Cf-Access-Authenticated-User-Email", "messi")
+		meRec := httptest.NewRecorder()
+		env.server.Routes().ServeHTTP(meRec, meReq)
+		if meRec.Code != http.StatusOK {
+			t.Fatalf("expected status 200 on /api/me, got %d", meRec.Code)
+		}
+
+		// Get /api/users (ListUsers)
+		listReq := httptest.NewRequest(http.MethodGet, "/api/users", nil)
+		listRec := httptest.NewRecorder()
+		env.server.Routes().ServeHTTP(listRec, listReq)
+		if listRec.Code != http.StatusOK {
+			t.Fatalf("expected status 200 on /api/users, got %d", listRec.Code)
+		}
+	})
+
+	t.Run("empty username rejected by check constraint", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/users", bytes.NewBufferString(`{"username":"   ","name":"Test"}`))
+		rec := httptest.NewRecorder()
+		env.server.Routes().ServeHTTP(rec, req)
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("expected 500 on empty username, got %d", rec.Code)
+		}
 	})
 
 	t.Run("duplicate username rejected by unique constraint", func(t *testing.T) {
@@ -184,6 +210,20 @@ func TestUserRoleAndTaskAssignmentFlow(t *testing.T) {
 		if len(withoutTasks) != 1 || withoutTasks[0].ID != u2.ID {
 			t.Fatalf("expected only u2 without tasks, got %+v", withoutTasks)
 		}
+
+		// Unassign and re-assign via URL params
+		unassignURL := fmt.Sprintf("/api/tasks/%d/assignees/%d", task.ID, u1.ID)
+		unassignReq := httptest.NewRequest(http.MethodDelete, unassignURL, nil)
+		unassignRec := httptest.NewRecorder()
+		env.server.Routes().ServeHTTP(unassignRec, unassignReq)
+		if unassignRec.Code != http.StatusNoContent {
+			t.Fatalf("expected 204 on unassign user, got %d", unassignRec.Code)
+		}
+
+		// Re-assign for cascade delete test
+		req2 := httptest.NewRequest(http.MethodPost, "/api/tasks/assign", bytes.NewBufferString(payload))
+		rec2 := httptest.NewRecorder()
+		env.server.Routes().ServeHTTP(rec2, req2)
 	})
 
 	t.Run("deleting task cascades and frees user assignment", func(t *testing.T) {
