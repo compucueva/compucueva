@@ -65,6 +65,9 @@ INSERT INTO users (
 )
 RETURNING *;
 
+-- name: ListUsers :many
+SELECT * FROM users ORDER BY name ASC;
+
 -- name: GetUserByUsername :one
 SELECT * FROM users WHERE username = ?;
 

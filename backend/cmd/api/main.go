@@ -16,6 +16,7 @@ import (
 
 	"github.com/compucueva/compucueva/internal/api"
 	"github.com/compucueva/compucueva/internal/db"
+	sqlschema "github.com/compucueva/compucueva/sql"
 )
 
 func main() {
@@ -53,11 +54,7 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("error al verificar SQLite: %w", err)
 	}
 
-	schema, err := os.ReadFile("sql/schema.sql")
-	if err != nil {
-		return fmt.Errorf("error al leer schema.sql: %w", err)
-	}
-	if _, err := conn.ExecContext(ctx, string(schema)); err != nil {
+	if _, err := conn.ExecContext(ctx, sqlschema.Schema); err != nil {
 		return fmt.Errorf("error al inicializar tablas: %w", err)
 	}
 	log.Printf("[db] Conectado exitosamente a %s", dbPath)

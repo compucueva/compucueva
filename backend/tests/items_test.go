@@ -127,8 +127,9 @@ func TestTaskItemAssignmentFlow(t *testing.T) {
 			t.Fatalf("unexpected task items: %+v", taskItems)
 		}
 
-		// Unassign item from task
-		unassignReq := httptest.NewRequest(http.MethodDelete, "/api/items/unassign", bytes.NewBufferString(payload))
+		// Unassign item from task via URL params
+		unassignURL := fmt.Sprintf("/api/tasks/%d/items/%d", task.ID, item.ID)
+		unassignReq := httptest.NewRequest(http.MethodDelete, unassignURL, nil)
 		unassignRec := httptest.NewRecorder()
 		env.server.Routes().ServeHTTP(unassignRec, unassignReq)
 		if unassignRec.Code != http.StatusNoContent {
@@ -136,7 +137,7 @@ func TestTaskItemAssignmentFlow(t *testing.T) {
 		}
 
 		// Second unassign returns 404
-		unassignReq2 := httptest.NewRequest(http.MethodDelete, "/api/items/unassign", bytes.NewBufferString(payload))
+		unassignReq2 := httptest.NewRequest(http.MethodDelete, unassignURL, nil)
 		unassignRec2 := httptest.NewRecorder()
 		env.server.Routes().ServeHTTP(unassignRec2, unassignReq2)
 		if unassignRec2.Code != http.StatusNotFound {

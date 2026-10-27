@@ -75,13 +75,21 @@ func (s *Server) handleAssignItemToTask(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) handleUnassignItemFromTask(w http.ResponseWriter, r *http.Request) {
-	var params db.UnassignItemFromTaskParams
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, ErrInvalidJSON, http.StatusBadRequest)
+	taskID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+	itemID, err := strconv.ParseInt(r.PathValue("item_id"), 10, 64)
+	if err != nil {
+		http.Error(w, ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
-	rowsAffected, err := s.db.UnassignItemFromTask(r.Context(), params)
+	rowsAffected, err := s.db.UnassignItemFromTask(r.Context(), db.UnassignItemFromTaskParams{
+		TaskID: taskID,
+		ItemID: itemID,
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
