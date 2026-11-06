@@ -29,6 +29,7 @@ func main() {
 }
 
 func run(ctx context.Context) error {
+	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8081"
@@ -63,7 +64,7 @@ func run(ctx context.Context) error {
 	apiServer := api.NewServer(queries)
 
 	httpServer := &http.Server{
-		Addr:    ":" + port,
+		Addr:    host + ":" + port,
 		Handler: apiServer.Routes(),
 	}
 
