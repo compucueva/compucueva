@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/compucueva/compucueva/frontend"
 	"github.com/compucueva/compucueva/internal/db"
 )
 
@@ -55,7 +56,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/items/assign", s.handleAssignItemToTask)
 
 	// Static frontend
-	mux.Handle("GET /", http.FileServer(http.Dir("../frontend")))
+	mux.Handle("GET /", http.FileServerFS(frontend.Static))
 
 	return mux
 }

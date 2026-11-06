@@ -321,3 +321,23 @@ func TestDeleteTask(t *testing.T) {
 		t.Fatalf("expected status 404 on second delete, got %d", rec2.Code)
 	}
 }
+
+func TestEmbeddedFrontend(t *testing.T) {
+	env := setupTestEnv(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	env.server.Routes().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "compucueva") {
+		t.Fatalf("expected embedded index.html (200), got %d", rec.Code)
+	}
+
+	reqGo := httptest.NewRequest(http.MethodGet, "/embed.go", nil)
+	recGo := httptest.NewRecorder()
+	env.server.Routes().ServeHTTP(recGo, reqGo)
+
+	if recGo.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for embed.go, got %d", recGo.Code)
+	}
+}
