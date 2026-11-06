@@ -1,0 +1,282 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #121212;
+  --panel: #1a1a1a;
+  --border: #2e2e2e;
+  --text: #d4d4d4;
+  --muted: #7a7a7a;
+  --accent: #a3be8c;
+  --warn: #ebcb8b;
+  --danger: #bf616a;
+  --font: "JetBrains Mono", "Fira Code", monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 16px;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+}
+
+button {
+  cursor: pointer;
+  background: var(--panel);
+}
+
+button:hover {
+  border-color: var(--text);
+}
+
+button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.brand {
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tab.active, .filter-group button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.me-badge {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.inline-form input {
+  flex: 1;
+  min-width: 180px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  gap: 4px;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .board {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 10px;
+  min-height: 420px;
+}
+
+.column h3 {
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 8px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.card-title {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.card-title:hover {
+  text-decoration: underline;
+}
+
+.prio-HIGH { color: var(--danger); }
+.prio-NORMAL { color: var(--muted); }
+.prio-LOW { color: var(--accent); }
+
+.card-desc {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.card-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-controls button {
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+  border: 1px solid var(--border);
+  padding: 8px;
+  text-align: left;
+}
+
+.data-table th {
+  background: var(--panel);
+  color: var(--muted);
+}
+
+dialog {
+  margin: auto;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--text);
+  padding: 16px;
+  width: 100%;
+  max-width: 540px;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+#form-edit-task {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#form-edit-task label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.dialog-header, .dialog-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
+}
+
+.relations-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.relations-grid h4 {
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.tag-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.tag-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+.mini-form {
+  display: flex;
+  gap: 4px;
+}
+
+.mini-form select {
+  flex: 1;
+  min-width: 0;
+}

@@ -1,0 +1,50 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Vet & Test
+        working-directory: backend
+        run: |
+          go vet ./...
+          go test -v ./...
+
+      - name: Build static binary (linux/amd64)
+        working-directory: backend
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -trimpath -ldflags="-s -w" -o ../dist/compucueva ./cmd/api
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Copy binary & restart service
+        env:
+          HOST: ${{ secrets.HOMELAB_HOST }}
+          USER: ${{ secrets.HOMELAB_USER }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          SSH_OPTS="-o StrictHostKeyChecking=accept-new"
+          if [ -n "$SSH_KEY" ]; then
+            install -m 600 <(printf '%s\n' "$SSH_KEY") /tmp/key
+            SSH_OPTS="$SSH_OPTS -i /tmp/key"
+          fi
+
+          rsync -az -e "ssh $SSH_OPTS" dist/compucueva "$USER@$HOST:/opt/compucueva/compucueva"
+          ssh $SSH_OPTS "$USER@$HOST" "sudo systemctl restart compucueva"

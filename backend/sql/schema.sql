@@ -1,17 +1,16 @@
 -- backend/schema.sql
-CREATE TABLE users(
+CREATE TABLE IF NOT EXISTS users(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  name TEXT NOT NULL, -- FULL NAME e.g. "Lionel Messi"
-  role TEXT, -- ?
+  username TEXT NOT NULL UNIQUE CHECK (trim(username) <> ''),
+  name TEXT NOT NULL CHECK (trim(name) <> ''),
+  role TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE TABLE tasks(
+CREATE TABLE IF NOT EXISTS tasks(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
+  title TEXT NOT NULL CHECK (trim(title) <> ''),
   description TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'TODO'
     CHECK (status IN ('TODO', 'DOING', 'REVIEW', 'DONE')),
@@ -21,15 +20,15 @@ CREATE TABLE tasks(
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE TABLE items(
+CREATE TABLE IF NOT EXISTS items(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT NOT NULL, -- PC, FUENTE, MOBO, etc
+  type TEXT NOT NULL CHECK (trim(type) <> ''),
   description TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE TABLE user_task(
+CREATE TABLE IF NOT EXISTS user_task(
   user_id INTEGER NOT NULL,
   task_id INTEGER NOT NULL,
   PRIMARY KEY(user_id, task_id),
@@ -37,7 +36,7 @@ CREATE TABLE user_task(
   FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
-CREATE TABLE task_item(
+CREATE TABLE IF NOT EXISTS task_item(
   task_id INTEGER NOT NULL,
   item_id INTEGER NOT NULL,
   PRIMARY KEY(task_id, item_id),

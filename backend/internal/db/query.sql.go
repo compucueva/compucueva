@@ -9,7 +9,73 @@ import (
 	"context"
 )
 
+const assignItemToTask = `-- name: AssignItemToTask :exec
+INSERT INTO task_item (task_id, item_id) 
+VALUES ( ?, ? )
+`
+
+type AssignItemToTaskParams struct {
+	TaskID int64 `json:"task_id"`
+	ItemID int64 `json:"item_id"`
+}
+
+func (q *Queries) AssignItemToTask(ctx context.Context, arg AssignItemToTaskParams) error {
+	_, err := q.db.ExecContext(ctx, assignItemToTask, arg.TaskID, arg.ItemID)
+	return err
+}
+
+const assignUserToTask = `-- name: AssignUserToTask :exec
+
+INSERT INTO user_task (user_id, task_id) 
+VALUES ( ?, ? )
+`
+
+type AssignUserToTaskParams struct {
+	UserID int64 `json:"user_id"`
+	TaskID int64 `json:"task_id"`
+}
+
+// USERS
+func (q *Queries) AssignUserToTask(ctx context.Context, arg AssignUserToTaskParams) error {
+	_, err := q.db.ExecContext(ctx, assignUserToTask, arg.UserID, arg.TaskID)
+	return err
+}
+
+const createItem = `-- name: CreateItem :one
+
+INSERT INTO items (
+  type, description
+) VALUES (
+  ?, ?
+  )
+RETURNING id, type, description, created_at, updated_at
+`
+
+type CreateItemParams struct {
+	Type        string  `json:"type"`
+	Description *string `json:"description"`
+}
+
+// ITEMS
+func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, error) {
+	row := q.db.QueryRowContext(ctx, createItem, arg.Type, arg.Description)
+	var i Item
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createTask = `-- name: CreateTask :one
+
+
+
+
+
 
 INSERT INTO tasks (
   title, description, status
@@ -25,6 +91,7 @@ type CreateTaskParams struct {
 }
 
 // backend/query.sql
+// TASKS
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, createTask, arg.Title, arg.Description)
 	var i Task
@@ -42,38 +109,57 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-  username, password_hash, name, role
+  username, name, role
 ) VALUES (
-  ?, ?, ?, ?
+  ?, ?, ?
 )
-RETURNING id, username, password_hash, name, role, created_at, updated_at
+RETURNING id, username, name, role, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username     string  `json:"username"`
-	PasswordHash string  `json:"password_hash"`
-	Name         string  `json:"name"`
-	Role         *string `json:"role"`
+	Username string  `json:"username"`
+	Name     string  `json:"name"`
+	Role     *string `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
-		arg.Username,
-		arg.PasswordHash,
-		arg.Name,
-		arg.Role,
-	)
+	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Name, arg.Role)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
-		&i.PasswordHash,
 		&i.Name,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteItem = `-- name: DeleteItem :execrows
+DELETE FROM items
+WHERE id=?
+`
+
+func (q *Queries) DeleteItem(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteItem, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteTask = `-- name: DeleteTask :execrows
+DELETE FROM tasks
+WHERE id=?
+`
+
+func (q *Queries) DeleteTask(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteTask, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getTask = `-- name: GetTask :one
@@ -96,8 +182,78 @@ func (q *Queries) GetTask(ctx context.Context, id int64) (Task, error) {
 	return i, err
 }
 
+const getTaskAssignees = `-- name: GetTaskAssignees :many
+SELECT u.id, u.username, u.name FROM users u
+JOIN user_task t ON u.id = t.user_id
+WHERE t.task_id = ?
+`
+
+type GetTaskAssigneesRow struct {
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+}
+
+func (q *Queries) GetTaskAssignees(ctx context.Context, taskID int64) ([]GetTaskAssigneesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTaskAssignees, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetTaskAssigneesRow{}
+	for rows.Next() {
+		var i GetTaskAssigneesRow
+		if err := rows.Scan(&i.ID, &i.Username, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTaskItems = `-- name: GetTaskItems :many
+SELECT i.id, i.type, i.description FROM items i
+JOIN task_item t ON i.id = t.item_id
+WHERE t.task_id = ?
+`
+
+type GetTaskItemsRow struct {
+	ID          int64   `json:"id"`
+	Type        string  `json:"type"`
+	Description *string `json:"description"`
+}
+
+func (q *Queries) GetTaskItems(ctx context.Context, taskID int64) ([]GetTaskItemsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTaskItems, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetTaskItemsRow{}
+	for rows.Next() {
+		var i GetTaskItemsRow
+		if err := rows.Scan(&i.ID, &i.Type, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE id = ?
+SELECT id, username, name, role, created_at, updated_at FROM users WHERE id = ?
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
@@ -106,7 +262,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
-		&i.PasswordHash,
 		&i.Name,
 		&i.Role,
 		&i.CreatedAt,
@@ -116,7 +271,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE username = ?
+SELECT id, username, name, role, created_at, updated_at FROM users WHERE username = ?
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
@@ -125,7 +280,6 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
-		&i.PasswordHash,
 		&i.Name,
 		&i.Role,
 		&i.CreatedAt,
@@ -135,7 +289,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const getUsersByRole = `-- name: GetUsersByRole :many
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users WHERE role = ?
+SELECT id, username, name, role, created_at, updated_at FROM users WHERE role = ?
 `
 
 func (q *Queries) GetUsersByRole(ctx context.Context, role *string) ([]User, error) {
@@ -144,13 +298,12 @@ func (q *Queries) GetUsersByRole(ctx context.Context, role *string) ([]User, err
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	items := []User{}
 	for rows.Next() {
 		var i User
 		if err := rows.Scan(
 			&i.ID,
 			&i.Username,
-			&i.PasswordHash,
 			&i.Name,
 			&i.Role,
 			&i.CreatedAt,
@@ -170,7 +323,7 @@ func (q *Queries) GetUsersByRole(ctx context.Context, role *string) ([]User, err
 }
 
 const getUsersWithTasks = `-- name: GetUsersWithTasks :many
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users u
+SELECT id, username, name, role, created_at, updated_at FROM users u
 WHERE EXISTS (
   SELECT 1 FROM user_task ut WHERE ut.user_id = u.id
 )
@@ -182,13 +335,12 @@ func (q *Queries) GetUsersWithTasks(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	items := []User{}
 	for rows.Next() {
 		var i User
 		if err := rows.Scan(
 			&i.ID,
 			&i.Username,
-			&i.PasswordHash,
 			&i.Name,
 			&i.Role,
 			&i.CreatedAt,
@@ -208,7 +360,7 @@ func (q *Queries) GetUsersWithTasks(ctx context.Context) ([]User, error) {
 }
 
 const getUsersWithoutTasks = `-- name: GetUsersWithoutTasks :many
-SELECT id, username, password_hash, name, role, created_at, updated_at FROM users u
+SELECT id, username, name, role, created_at, updated_at FROM users u
 WHERE NOT EXISTS (
   SELECT 1 FROM user_task ut WHERE ut.user_id = u.id
 )
@@ -220,15 +372,48 @@ func (q *Queries) GetUsersWithoutTasks(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	items := []User{}
 	for rows.Next() {
 		var i User
 		if err := rows.Scan(
 			&i.ID,
 			&i.Username,
-			&i.PasswordHash,
 			&i.Name,
 			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listItems = `-- name: ListItems :many
+SELECT id, type, description, created_at, updated_at FROM items
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListItems(ctx context.Context) ([]Item, error) {
+	rows, err := q.db.QueryContext(ctx, listItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Item{}
+	for rows.Next() {
+		var i Item
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Description,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -256,7 +441,7 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	items := []Task{}
 	for rows.Next() {
 		var i Task
 		if err := rows.Scan(
@@ -279,4 +464,135 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, username, name, role, created_at, updated_at FROM users ORDER BY name ASC
+`
+
+func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Name,
+			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const unassignItemFromTask = `-- name: UnassignItemFromTask :execrows
+DELETE FROM task_item
+WHERE task_id=? AND item_id=?
+`
+
+type UnassignItemFromTaskParams struct {
+	TaskID int64 `json:"task_id"`
+	ItemID int64 `json:"item_id"`
+}
+
+func (q *Queries) UnassignItemFromTask(ctx context.Context, arg UnassignItemFromTaskParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, unassignItemFromTask, arg.TaskID, arg.ItemID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const unassignUserFromTask = `-- name: UnassignUserFromTask :execrows
+DELETE FROM user_task
+WHERE user_id=? AND task_id=?
+`
+
+type UnassignUserFromTaskParams struct {
+	UserID int64 `json:"user_id"`
+	TaskID int64 `json:"task_id"`
+}
+
+func (q *Queries) UnassignUserFromTask(ctx context.Context, arg UnassignUserFromTaskParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, unassignUserFromTask, arg.UserID, arg.TaskID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const updateTask = `-- name: UpdateTask :one
+UPDATE tasks
+SET title=?, description=?, priority=?, updated_at=CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, title, description, status, priority, created_at, updated_at
+`
+
+type UpdateTaskParams struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Priority    string `json:"priority"`
+	ID          int64  `json:"id"`
+}
+
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
+	row := q.db.QueryRowContext(ctx, updateTask,
+		arg.Title,
+		arg.Description,
+		arg.Priority,
+		arg.ID,
+	)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.Priority,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateTaskStatus = `-- name: UpdateTaskStatus :one
+UPDATE tasks
+SET status = ?, updated_at=CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, title, description, status, priority, created_at, updated_at
+`
+
+type UpdateTaskStatusParams struct {
+	Status string `json:"status"`
+	ID     int64  `json:"id"`
+}
+
+func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) (Task, error) {
+	row := q.db.QueryRowContext(ctx, updateTaskStatus, arg.Status, arg.ID)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.Priority,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

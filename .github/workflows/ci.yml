@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Vet, Test & Build
+        working-directory: backend
+        run: |
+          go vet ./...
+          go test -v ./...
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./cmd/api
